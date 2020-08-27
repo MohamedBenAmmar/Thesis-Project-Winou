@@ -78,7 +78,9 @@ export default class Map extends React.Component {
       const resp = await axios.get(
         `https://maps.googleapis.com/maps/api/directions/json?origin=${startLoc}&destination=${desLoc}&key=${API_KEY}&mode=walking`
       );
+
       const response = await resp.data.routes[0];
+
       // const distanceTime =  response.legs[0]
       // const distance =  distanceTime.distance.text
       // const time = distanceTime.duration.text
