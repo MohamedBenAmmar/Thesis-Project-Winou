@@ -109,6 +109,7 @@ export default class Map extends React.Component {
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/distancematrix/json?units=metric&mode=walking&origins=${current.lat},${current.long}&destinations=${stationstring}&key=${API_KEY}`
       );
+
       const res = response.data.rows[0].elements
         .map((ele, i) => {
           return {
@@ -117,9 +118,7 @@ export default class Map extends React.Component {
             coords: locations[i].coords,
           };
         })
-
         .sort((a, b) => a.duration.value - b.duration.value)[0];
-
       this.setState({
         latitudeStation: res.coords.latitude,
         longitudeStation: res.coords.longitude,
