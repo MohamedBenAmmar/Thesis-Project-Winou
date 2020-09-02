@@ -13,6 +13,7 @@ import Line from "./components/Lines";
 YellowBox.ignoreWarnings([
   "Non-serializable values were found in the navigation state",
 ]);
+YellowBox.ignoreWarnings(["Setting a timer"]);
 const Stack = createStackNavigator();
 const StackNavigator = () => {
   return (

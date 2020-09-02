@@ -5,7 +5,10 @@ import axios from "axios";
 import * as Location from "expo-location";
 import * as Permissions from "expo-permissions";
 import Polyline from "@mapbox/polyline";
+
 import key from "./key";
+import { db } from "../config";
+// import { NavigationContainer } from "@react-navigation/native";
 
 const locations = require("../locations.json");
 const trainligne = require("../encodedPoly.json");
@@ -42,9 +45,7 @@ export default class Map extends React.Component {
       oneLigne: this?.props?.route?.params?.line || -1,
       oneCoords: [],
     };
-    console.log(this.state.line);
   }
-
   async getLocationAsync() {
     try {
       const { status } = await Permissions.getAsync(Permissions.LOCATION);
@@ -75,12 +76,24 @@ export default class Map extends React.Component {
       console.error("error", e);
     }
   }
+  async trainLocationMovement() {
+    await db
+      .ref("/locations")
+      .once("value")
+      .then((x) => console.log(x[0]));
+  }
   async componentDidMount() {
+    // await db
+    //   .ref("/locations")
+    //   .once("value")
+    //   .then((x) => console.log(x));
     await this.AlltrainItenerary();
     await this.getLocationAsync();
   }
+
   async getDirections(startLoc, desLoc) {
     try {
+      console.log(startLoc, desLoc);
       const resp = await axios.get(
         `https://maps.googleapis.com/maps/api/directions/json?origin=${startLoc}&destination=${desLoc}&key=${key}&mode=walking`
       );
@@ -113,7 +126,6 @@ export default class Map extends React.Component {
         )
         .slice(0, 25)
         .join("%7C");
-      console.log(stationstring1);
       const stationstring2 = specificLocation
         .map((location) =>
           [location.coords.latitude, location.coords.longitude].join("%2C")
@@ -132,20 +144,41 @@ export default class Map extends React.Component {
         var response2 = {};
       }
       const response = { ...response1, ...response2 };
-      const res = response.data.rows[0].elements
-        .map((ele, i) => {
-          return {
-            ...ele,
-            destination_addresses: response.data.destination_addresses[i],
-            coords: specificLocation[i].coords,
-          };
-        })
-        .sort((a, b) => {
-          a.distance.value - b.distance.value;
-        })[response.data.rows[0].elements.length - 1];
+      const res = response.data.rows[0].elements.map((ele, i) => {
+        return {
+          ...ele,
+          destination_addresses: response.data.destination_addresses[i],
+          coords: specificLocation[i].coords,
+        };
+      });
+      const sort = function (prop, arr) {
+        prop = prop.split(".");
+        var len = prop.length;
+        arr.sort(function (a, b) {
+          var i = 0;
+          while (i < len) {
+            a = a[prop[i]];
+            b = b[prop[i]];
+            i++;
+          }
+          if (a < b) {
+            return -1;
+          } else if (a > b) {
+            return 1;
+          } else {
+            return 0;
+          }
+        });
+        return arr;
+      };
+      const sortedRes = sort("distance.value", res)[0];
+      console.log("respppppppppppp", sortedRes);
+      // .sort((a, b) => {
+      //   a.distance.value - b.distance.value;
+      // })[0];
       this.setState({
-        latitudeStation: res.coords.latitude,
-        longitudeStation: res.coords.longitude,
+        latitudeStation: sortedRes.coords.latitude,
+        longitudeStation: sortedRes.coords.longitude,
       });
     } catch (e) {
       console.error("error", e);
@@ -287,17 +320,19 @@ export default class Map extends React.Component {
           style={{
             width,
             paddingTop: 10,
+            paddingBottom: 10,
             alignSelf: "center",
             alignItems: "center",
-            height: height * 0.15,
+            height: height * 0.05,
             backgroundColor: "white",
             justifyContent: "flex-end",
             position: "absolute",
+            top: 0,
           }}
         >
-          <Text style={{ fontWeight: "bold" }}>Estimated Time: {time}</Text>
           <Text style={{ fontWeight: "bold" }}>
-            Estimated Distance: {distance}
+            {" "}
+            {time} ({distance})
           </Text>
         </View>
         {/* <MyTabs /> */}
@@ -338,11 +373,11 @@ const Styles = StyleSheet.create({
   map: {
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT,
-    // left: 0,
-    // right: 0,
-    // top: 0,
-    // bottom: 0,
-    // position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    position: "absolute",
   },
   loading: {
     position: "absolute",
